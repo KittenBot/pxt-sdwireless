@@ -1,0 +1,20 @@
+{
+    "target": "microbit",
+    "targetVersion": "2.1.1",
+    "name": "sdwireless",
+    "meta": {},
+    "editor": "tsprj",
+    "pubId": "",
+    "pubCurrent": false,
+    "_rev": null,
+    "id": "fc21f5a1-a899-4a21-488a-c129bfc62e7a",
+    "recentUse": 1562812061,
+    "modificationTime": 1562812061,
+    "blobId": null,
+    "blobVersion": null,
+    "blobCurrent": false,
+    "isDeleted": false,
+    "path": "pxt-sdwireless",
+    "githubCurrent": false,
+    "saveId": null
+}

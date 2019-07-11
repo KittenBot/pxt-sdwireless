@@ -26,14 +26,15 @@ namespace sdwireless {
     }
 
     function spiRx(): string {
-        let buf = pins.createBuffer(24);
+
         pins.digitalWritePin(cs, 0)
         pins.spiWrite(0xff)
         pins.spiWrite(0xaa)
         pins.spiWrite(0xe1)
-        pins.spiWrite(0)
-        for (let j = 0; j <= 24; j++) {
-            buf.setNumber(NumberFormat.UInt8LE, j, pins.spiWrite(0))
+        let len = pins.spiWrite(0)
+        let buf = pins.createBuffer(len);
+        for (let j = 0; j <= len; j++) {
+            buf.setUint8(j, pins.spiWrite(0))
         }
         pins.digitalWritePin(cs, 1)
         return buf.toString();
@@ -43,10 +44,10 @@ namespace sdwireless {
     //% weight=100
     export function sdw_init(): void {
         pins.spiPins(DigitalPin.P15, DigitalPin.P14, DigitalPin.P13)
-        pins.spiFormat(8, 0)
+        pins.spiFormat(8, 3)
         pins.spiFrequency(1000000)
         pins.digitalWritePin(cs, 1)
-        pins.onPulsed(irq, PulseValue.Low, function () {
+        pins.onPulsed(irq, PulseValue.High, function () {
             let msg = spiRx()
             if (onMsg) onMsg(msg)
         })

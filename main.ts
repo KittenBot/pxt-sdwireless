@@ -10,44 +10,52 @@ namespace sdwireless {
     type EvtStr = (data: string) => void;
 
     let onMsg: EvtStr;
-    let cs = DigitalPin.P8;
-    let irq = DigitalPin.P2;
+    let spi: SPI;
+    let cs = pins.P8;
+    let irq = pins.P2;
 
     function spiTx(b: string) {
-        pins.digitalWritePin(cs, 0)
-        pins.spiWrite(0xff)
-        pins.spiWrite(0xaa)
-        pins.spiWrite(0xe0)
-        pins.spiWrite(b.length)
-        for (let j = 0; j <= b.length - 1; j++) {
-            pins.spiWrite(b.charCodeAt(j))
+        if (!spi) return;
+        let tx = pins.createBuffer(b.length + 4)
+        let rx = pins.createBuffer(b.length + 4)
+
+        tx.setUint8(0, 0xff)
+        tx.setUint8(1, 0xaa)
+        tx.setUint8(2, 0xe0)
+        tx.setUint8(3, b.length)
+        for (let j = 0; j <= b.length; j++) {
+            tx.setUint8(j + 4, b.charCodeAt(j))
         }
-        pins.digitalWritePin(cs, 1)
+        cs.digitalWrite(false)
+        spi.transfer(tx, rx)
+        cs.digitalWrite(true)
     }
 
     function spiRx(): string {
+        if (!spi) return 'No SPI';
+        // max 24 bytes as microbit ble supported
+        let tx = pins.createBuffer(24 + 4)
+        let rx = pins.createBuffer(24 + 4)
 
-        pins.digitalWritePin(cs, 0)
-        pins.spiWrite(0xff)
-        pins.spiWrite(0xaa)
-        pins.spiWrite(0xe1)
-        let len = pins.spiWrite(0)
-        let buf = pins.createBuffer(len);
-        for (let j = 0; j <= len; j++) {
-            buf.setUint8(j, pins.spiWrite(0))
-        }
-        pins.digitalWritePin(cs, 1)
-        return buf.toString();
+        tx.setUint8(0, 0xff)
+        tx.setUint8(1, 0xaa)
+        tx.setUint8(2, 0xe0)
+        tx.setUint8(3, 0)
+
+        cs.digitalWrite(false)
+        spi.transfer(tx, rx)
+        cs.digitalWrite(true)
+        return rx.slice(3).toString()
     }
 
     //% blockId=sdw_init block="SD wireless init"
     //% weight=100
     export function sdw_init(): void {
-        pins.spiPins(DigitalPin.P15, DigitalPin.P14, DigitalPin.P13)
-        pins.spiFormat(8, 3)
-        pins.spiFrequency(1000000)
-        pins.digitalWritePin(cs, 1)
-        pins.onPulsed(irq, PulseValue.High, function () {
+        spi = pins.createSPI(pins.P15, pins.P14, pins.P13)
+        spi.setMode(3)
+        spi.setFrequency(1000000)
+        cs.digitalWrite(true)
+        irq.onPulsed(PulseValue.High, function () {
             let msg = spiRx()
             if (onMsg) onMsg(msg)
         })

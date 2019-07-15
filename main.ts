@@ -23,7 +23,11 @@ namespace sdwireless {
     let cs = pins.P8;
     let irq = pins.P2;
 
-    function spiTx(b: Buffer) {
+    // addr id: 
+    // e0: tx
+    // e1: rx
+    // e2: config
+    function spiTx(b: Buffer, ctl:boolean=false) {
         if (!spi) return;
         let tx = pins.createBuffer(b.length + 4)
         let rx = pins.createBuffer(b.length + 4)
@@ -181,6 +185,15 @@ namespace sdwireless {
     //% weight=70
     export function sdw_onmbit_value(handler: (name: string, value: number) => void): void {
         onMbitValue = handler;
+    }
+
+    //% blockId=sdw_set_radioch block="Set Radio Group %ch"
+    //% weight=60
+    export function sdw_set_radioch(ch: number): void {
+        let buf = pins.createBuffer(2)
+        buf[0] = 1;
+        buf[1] = ch;
+        spiTx(buf, true)
     }
 
 }

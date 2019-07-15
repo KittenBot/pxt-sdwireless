@@ -9,9 +9,16 @@ namespace sdwireless {
 
     type EvtStr = (data: string) => void;
     type EvtBuff = (data: Buffer) => void;
+    type EvtNum = (data: number) => void;
+    type EvtValue = (name: string, value: number) => void;
 
     let onMsg: EvtStr;
     let onMsgBuff: EvtBuff;
+    // microbit radio callback
+    let onMbitString: EvtStr;
+    let onMbitNumber: EvtNum;
+    let onMbitValue: EvtValue;
+
     let spi: SPI;
     let cs = pins.P8;
     let irq = pins.P2;
@@ -20,7 +27,7 @@ namespace sdwireless {
         if (!spi) return;
         let tx = pins.createBuffer(b.length + 4)
         let rx = pins.createBuffer(b.length + 4)
-
+        // check sum and service num not implement
         tx.setUint8(0, 0xff)
         tx.setUint8(1, 0xaa)
         tx.setUint8(2, 0xe0)
@@ -41,7 +48,7 @@ namespace sdwireless {
 
         tx.setUint8(0, 0xff)
         tx.setUint8(1, 0xaa)
-        tx.setUint8(2, 0xe0)
+        tx.setUint8(2, 0xe1)
         tx.setUint8(3, 0)
 
         cs.digitalWrite(false)
@@ -63,12 +70,28 @@ namespace sdwireless {
             let msg = spiRx()
             if (onMsg) onMsg(msg.toString())
             if (onMsgBuff) onMsgBuff(msg)
+            if (onMbitNumber && msg[0] == PACKET_TYPE_NUMBER){
+                let num = msg.getNumber(NumberFormat.Int32LE, 9)
+                onMbitNumber(num)
+            }
+            if (onMbitString && msg[0] == PACKET_TYPE_STRING) {
+                let strLen : number = msg[9]
+                let strBuf = msg.slice(10, strLen)
+                onMbitString(strBuf.toString())
+            }
+            if (onMbitValue && msg[0] == PACKET_TYPE_VALUE) {
+                let value: number = msg.getNumber(NumberFormat.Int32LE, 9)
+                let strLen: number = msg[13]
+                let strBuf = msg.slice(14, strLen)
+                onMbitValue(strBuf.toString(), value)
+            }
         })
     }
 
     //% blockId=sdw_tx block="Send message %data"
     //% weight=90
     export function sdw_tx(data: string): void {
+        data += '\n'; // force append line break in string mode
         let buf = pins.createBuffer(data.length)
         for (let i=0;i<data.length;i++){
             buf.setUint8(i, data.charCodeAt(i))
@@ -86,6 +109,78 @@ namespace sdwireless {
     //% weight=90
     export function sdw_ondata_buff(handler: (sdMsg: Buffer) => void): void {
         onMsgBuff = handler;
+    }
+
+
+    /*
+    Packet byte layout
+    | 0              | 1 ... 4       | 5 ... 8           | 9 ... 28
+    ----------------------------------------------------------------
+    | packet type    | system time   | serial number     | payload
+    */
+    // payload: number (9 ... 12)
+    const PACKET_TYPE_NUMBER = 0;
+    // payload: number (9 ... 12), name length (13), name (14 ... 26)
+    const PACKET_TYPE_VALUE = 1;
+    // payload: string length (9), string (10 ... 28)
+    const PACKET_TYPE_STRING = 2;
+    // payload: buffer length (9), buffer (10 ... 28)
+    const PACKET_TYPE_BUFFER = 3;
+    // payload: number (9 ... 16)
+    const PACKET_TYPE_DOUBLE = 4;
+    // payload: number (9 ... 16), name length (17), name (18 ... 26)
+    const PACKET_TYPE_DOUBLE_VALUE = 5;
+
+    //% blockId=sdw_mbit_send_string block="Send Microbit String %data"
+    //% weight=80
+    export function sdw_mbit_send_string(data: string): void {
+        let buf = pins.createBuffer(9+1+data.length)
+        buf[0] = PACKET_TYPE_STRING;
+        buf[9] = data.length
+        for (let i=0;i<data.length;i++){
+            buf[10+i] = data.charCodeAt(i)
+        }
+        spiTx(buf)
+    }
+
+    //% blockId=sdw_mbit_send_number block="Send Microbit Number %data"
+    //% weight=80
+    export function sdw_mbit_send_number(data: number): void {
+        let buf = pins.createBuffer(4 + 9)
+        buf[0] = PACKET_TYPE_NUMBER;
+        buf.setNumber(NumberFormat.Int32LE, 9, data);
+        spiTx(buf)
+    }
+
+    //% blockId=sdw_mbit_send_value block="Send Microbit Value %name = %value"
+    //% weight=80
+    export function sdw_mbit_send_value(name: string, value: number): void {
+        let buf = pins.createBuffer(9+4+1+name.length)
+        buf[0] = PACKET_TYPE_VALUE;
+        buf.setNumber(NumberFormat.Int32LE, 9, value);
+        buf[13] = name.length
+        for (let i = 0; i < name.length; i++) {
+            buf[14 + i] = name.charCodeAt(i)
+        }
+        spiTx(buf)
+    }
+
+    //% blockId=sdw_onmbit_number block="on Microbit Number"
+    //% weight=70
+    export function sdw_onmbit_number(handler: (num: number) => void): void {
+        onMbitNumber = handler;
+    }
+
+    //% blockId=sdw_onmbit_string block="on Microbit String"
+    //% weight=70
+    export function sdw_onmbit_string(handler: (str: string) => void): void {
+        onMbitString = handler;
+    }
+
+    //% blockId=sdw_onmbit_value block="on Microbit Value"
+    //% weight=70
+    export function sdw_onmbit_value(handler: (name: string, value: number) => void): void {
+        onMbitValue = handler;
     }
 
 }

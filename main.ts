@@ -4,7 +4,7 @@ load dependency
 "sdwireless": "file:../pxt-sdwireless"
 */
 
-//% color="#31C7D5" weight=10 icon="\uf1eb"
+//% color="#31C7D5" weight=10 icon="\uf012"
 namespace sdwireless {
 
     type EvtStr = (data: string) => void;
@@ -20,21 +20,21 @@ namespace sdwireless {
     let onMbitValue: EvtValue;
 
     let spi: SPI;
-    let cs = pins.P8;
-    let irq = pins.P2;
+    let cs = pins.P19;
+    let irq = pins.P20;
 
     // addr id: 
     // e0: tx
     // e1: rx
     // e2: config
-    function spiTx(b: Buffer, ctl:boolean=false) {
+    function spiTx(b: Buffer, ctl: boolean = false) {
         if (!spi) return;
         let tx = pins.createBuffer(b.length + 4)
         let rx = pins.createBuffer(b.length + 4)
         // check sum and service num not implement
         tx.setUint8(0, 0xff)
         tx.setUint8(1, 0xaa)
-        tx.setUint8(2, 0xe0)
+        tx.setUint8(2, ctl ? 0xe2 : 0xe0)
         tx.setUint8(3, b.length)
         for (let j = 0; j <= b.length; j++) {
             tx.setUint8(j + 4, b[j])
@@ -74,12 +74,12 @@ namespace sdwireless {
             let msg = spiRx()
             if (onMsg) onMsg(msg.toString())
             if (onMsgBuff) onMsgBuff(msg)
-            if (onMbitNumber && msg[0] == PACKET_TYPE_NUMBER){
+            if (onMbitNumber && msg[0] == PACKET_TYPE_NUMBER) {
                 let num = msg.getNumber(NumberFormat.Int32LE, 9)
                 onMbitNumber(num)
             }
             if (onMbitString && msg[0] == PACKET_TYPE_STRING) {
-                let strLen : number = msg[9]
+                let strLen: number = msg[9]
                 let strBuf = msg.slice(10, strLen)
                 onMbitString(strBuf.toString())
             }
@@ -97,7 +97,7 @@ namespace sdwireless {
     export function sdw_tx(data: string): void {
         data += '\n'; // force append line break in string mode
         let buf = pins.createBuffer(data.length)
-        for (let i=0;i<data.length;i++){
+        for (let i = 0; i < data.length; i++) {
             buf.setUint8(i, data.charCodeAt(i))
         }
         spiTx(buf)
@@ -138,11 +138,11 @@ namespace sdwireless {
     //% blockId=sdw_mbit_send_string block="Send Microbit String %data"
     //% weight=80
     export function sdw_mbit_send_string(data: string): void {
-        let buf = pins.createBuffer(9+1+data.length)
+        let buf = pins.createBuffer(9 + 1 + data.length)
         buf[0] = PACKET_TYPE_STRING;
         buf[9] = data.length
-        for (let i=0;i<data.length;i++){
-            buf[10+i] = data.charCodeAt(i)
+        for (let i = 0; i < data.length; i++) {
+            buf[10 + i] = data.charCodeAt(i)
         }
         spiTx(buf)
     }
@@ -159,7 +159,7 @@ namespace sdwireless {
     //% blockId=sdw_mbit_send_value block="Send Microbit Value %name = %value"
     //% weight=80
     export function sdw_mbit_send_value(name: string, value: number): void {
-        let buf = pins.createBuffer(9+4+1+name.length)
+        let buf = pins.createBuffer(9 + 4 + 1 + name.length)
         buf[0] = PACKET_TYPE_VALUE;
         buf.setNumber(NumberFormat.Int32LE, 9, value);
         buf[13] = name.length

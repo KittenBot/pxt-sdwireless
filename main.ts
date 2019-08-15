@@ -80,6 +80,7 @@ namespace sdwireless {
         spiTx(buf, 0xea)
         basic.pause(200)
         spiTx(buf, 0xea)
+        basic.pause(200)
         irq.onEvent(PinEvent.PulseHigh, function () {
             let msg = spiRx()
             if (onMsg) onMsg(msg.toString())
@@ -105,12 +106,18 @@ namespace sdwireless {
     //% blockId=sdw_tx block="Send message %data"
     //% weight=90
     export function sdw_tx(data: string): void {
-        // data += '\n'; // force append line break in string mode
         let buf = pins.createBuffer(data.length)
         for (let i = 0; i < data.length; i++) {
             buf.setUint8(i, data.charCodeAt(i))
         }
         spiTx(buf)
+    }
+
+    //% blockId=sdw_tx_n block="Send message %data (New Line)"
+    //% weight=90
+    export function sdw_tx_n(data: string): void {
+        data += '\n'; // force append line break in string mode
+        sdw_tx(data);
     }
 
     //% blockId=sdw_ondata block="on Message"
@@ -197,7 +204,7 @@ namespace sdwireless {
         onMbitValue = handler;
     }
 
-    //% blockId=sdw_set_radiogp block="Set Radio Group %ch"
+    //% blockId=sdw_set_radiogp block="Set Radio Group %gp"
     //% weight=60
     export function sdw_set_radiogp(gp: number): void {
         let buf = pins.createBuffer(2)

@@ -9,7 +9,8 @@
     },
     "files": [
         "README.md",
-        "main.ts"
+        "main.ts",
+        "_locales/zh/sdwireless-strings.json"
     ],
     "public": true,
     "preferredEditor": "tsprj"

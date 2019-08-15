@@ -12,6 +12,10 @@ namespace sdwireless {
     type EvtNum = (data: number) => void;
     type EvtValue = (name: string, value: number) => void;
 
+    const CONFIG_SETGROUP = 0xe2;
+    const SPI_TX = 0xe0;
+    const SPI_RX = 0xe2;
+
     let onMsg: EvtStr;
     let onMsgBuff: EvtBuff;
     // microbit radio callback
@@ -27,14 +31,15 @@ namespace sdwireless {
     // e0: tx
     // e1: rx
     // e2: config
-    function spiTx(b: Buffer, ctl: boolean = false) {
+    function spiTx(b: Buffer, protocol?: number) {
         if (!spi) return;
+        if (!protocol) protocol = SPI_TX;
         let tx = pins.createBuffer(b.length + 4)
         let rx = pins.createBuffer(b.length + 4)
         // check sum and service num not implement
         tx.setUint8(0, 0xff)
         tx.setUint8(1, 0xaa)
-        tx.setUint8(2, ctl ? 0xe2 : 0xe0)
+        tx.setUint8(2, protocol)
         tx.setUint8(3, b.length)
         for (let j = 0; j <= b.length; j++) {
             tx.setUint8(j + 4, b[j])
@@ -69,7 +74,12 @@ namespace sdwireless {
         spi.setMode(3)
         spi.setFrequency(1000000)
         cs.digitalWrite(true)
-
+        let buf = pins.createBuffer(2)
+        buf[0] = 0x31;
+        buf[1] = 0x32;
+        spiTx(buf, 0xea)
+        basic.pause(200)
+        spiTx(buf, 0xea)
         irq.onEvent(PinEvent.PulseHigh, function () {
             let msg = spiRx()
             if (onMsg) onMsg(msg.toString())
@@ -95,7 +105,7 @@ namespace sdwireless {
     //% blockId=sdw_tx block="Send message %data"
     //% weight=90
     export function sdw_tx(data: string): void {
-        data += '\n'; // force append line break in string mode
+        // data += '\n'; // force append line break in string mode
         let buf = pins.createBuffer(data.length)
         for (let i = 0; i < data.length; i++) {
             buf.setUint8(i, data.charCodeAt(i))
@@ -187,13 +197,13 @@ namespace sdwireless {
         onMbitValue = handler;
     }
 
-    //% blockId=sdw_set_radioch block="Set Radio Group %ch"
+    //% blockId=sdw_set_radiogp block="Set Radio Group %ch"
     //% weight=60
-    export function sdw_set_radioch(ch: number): void {
+    export function sdw_set_radiogp(gp: number): void {
         let buf = pins.createBuffer(2)
         buf[0] = 1;
-        buf[1] = ch;
-        spiTx(buf, true)
+        buf[1] = gp;
+        spiTx(buf, CONFIG_SETGROUP)
     }
 
 }

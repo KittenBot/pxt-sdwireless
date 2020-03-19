@@ -1,0 +1,14 @@
+{
+    "sdwireless.sdw_init|block": "SD 无线模块初始化",
+    "sdwireless.sdw_tx|block": "发送消息 %data",
+    "sdwireless.sdw_tx_n|block": "发送消息 %data (新行)",
+    "sdwireless.sdw_ondata|block": "当收到消息",
+    "sdwireless.sdw_ondata_buff|block": "当收到消息(字节)",
+    "sdwireless.sdw_mbit_send_string|block": "发送Microbit文本 %data",
+    "sdwireless.sdw_mbit_send_number|block": "发送Microbit数字 %data",
+    "sdwireless.sdw_mbit_send_value|block": "发送Microbit变量 %name = %value",
+    "sdwireless.sdw_onmbit_number|block": "当收到Microbit数字",
+    "sdwireless.sdw_onmbit_string|block": "当收到Microbit文本",
+    "sdwireless.sdw_onmbit_value|block": "当收到Microbit变量",
+    "sdwireless.sdw_set_radiogp|block": "设置无线组%ch"
+}

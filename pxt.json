@@ -1,6 +1,6 @@
 {
     "name": "sdwireless",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "",
     "license": "MIT",
     "dependencies": {
@@ -10,7 +10,8 @@
     "files": [
         "README.md",
         "main.ts",
-        "_locales/zh/sdwireless-strings.json"
+        "_locales/zh-CN/sdwireless-strings.json",
+        "_locales/zh-TW/sdwireless-strings.json"
     ],
     "public": true,
     "preferredEditor": "tsprj"
